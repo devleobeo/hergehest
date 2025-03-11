@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HedgeMaster</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 0;
+            margin: 0;
+            color: var(--tg-theme-text-color, #000000);
+            background-color: var(--tg-theme-bg-color, #ffffff);
+        }
+        .container {
+            max-width: 390px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .player-info {
+            background-color: var(--tg-theme-secondary-bg-color, #f2f2f2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .asset-item {
+            background-color: var(--tg-theme-secondary-bg-color, #f2f2f2);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .asset-info {
+            flex: 1;
+        }
+        .asset-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .asset-price {
+            color: var(--tg-theme-hint-color, #999999);
+        }
+        .action-btn {
+            background-color: var(--tg-theme-button-color, #2481cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 5px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .tabs {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 10px;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+        }
+        .tab.active {
+            border-bottom: 2px solid var(--tg-theme-button-color, #2481cc);
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>HedgeMaster</h1>
+            <p>Dein Weg zum Finanzimperium</p>
+        </div>
+        
+        <div id="player-info" class="player-info">
+            <h2>Level 1 Investor</h2>
+            <p>Guthaben: $10,000.00</p>
+            <p>Erfahrung: 0/1000</p>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="stocks">Aktien</div>
+            <div class="tab" data-tab="real-estate">Immobilien</div>
+            <div class="tab" data-tab="portfolio">Portfolio</div>
+        </div>
+        
+        <div id="stocks-tab" class="tab-content active">
+            <div class="section-title">Aktienmarkt</div>
+            <div id="stocks-container">
+                <!-- Aktien werden hier per JavaScript eingefügt -->
+                <div class="asset-item">
+                    <div class="asset-info">
+                        <div class="asset-name">TechCorp (TECH1)</div>
+                        <div class="asset-price">$150.00</div>
+                    </div>
+                    <button class="action-btn buy-btn" data-stock="TECH1">Kaufen</button>
+                </div>
+                <div class="asset-item">
+                    <div class="asset-info">
+                        <div class="asset-name">EnergyPlus (ENER1)</div>
+                        <div class="asset-price">$75.00</div>
+                    </div>
+                    <button class="action-btn buy-btn" data-stock="ENER1">Kaufen</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="real-estate-tab" class="tab-content">
+            <div class="section-title">Immobilienmarkt</div>
+            <div id="real-estate-container">
+                <!-- Immobilien werden hier per JavaScript eingefügt -->
+                <div class="asset-item">
+                    <div class="asset-info">
+                        <div class="asset-name">Stadtapartment</div>
+                        <div class="asset-price">$250,000.00</div>
+                    </div>
+                    <button class="action-btn buy-btn" data-property="APT1">Details</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="portfolio-tab" class="tab-content">
+            <div class="section-title">Mein Portfolio</div>
+            <div id="portfolio-container">
+                <!-- Portfolio-Elemente werden hier per JavaScript eingefügt -->
+                <p>Du besitzt noch keine Vermögenswerte.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Telegram WebApp initialisieren
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Spielerkontext (würde normalerweise vom Server geladen)
+        let player = {
+            userId: tg.initDataUnsafe.user?.id || "testuser",
+            name: tg.initDataUnsafe.user?.first_name || "Spieler",
+            balance: 10000,
+            level: 1,
+            experience: 0,
+            portfolio: {
+                stocks: {},
+                realEstate: {}
+            }
+        };
+        
+        // Marktdaten (würden normalerweise vom Server geladen)
+        const market = {
+            stocks: {
+                "TECH1": { name: "TechCorp", price: 150, volatility: 0.05 },
+                "ENER1": { name: "EnergyPlus", price: 75, volatility: 0.03 },
+                "BANK1": { name: "GlobalBank", price: 200, volatility: 0.02 },
+                "AUTO1": { name: "AutoFuture", price: 120, volatility: 0.04 }
+            },
+            realEstate: {
+                "APT1": { name: "Stadtapartment", price: 250000, type: "apartment" },
+                "HSE1": { name: "Einfamilienhaus", price: 500000, type: "house" },
+                "OFC1": { name: "Kleinbüro", price: 750000, type: "commercial" }
+            }
+        };
+        
+        // UI-Rendering
+        function renderPlayerInfo() {
+            document.getElementById('player-info').innerHTML = `
+                <h2>Level ${player.level} Investor</h2>
+                <p>Guthaben: $${player.balance.toFixed(2)}</p>
+                <p>Erfahrung: ${player.experience}/${player.level * 1000}</p>
+            `;
+        }
+        
+        function renderStocks() {
+            const stocksContainer = document.getElementById('stocks-container');
+            stocksContainer.innerHTML = '';
+            
+            for (const stockId in market.stocks) {
+                const stock = market.stocks[stockId];
+                const playerStock = player.portfolio.stocks[stockId];
+                
+                const stockElement = document.createElement('div');
+                stockElement.className = 'asset-item';
+                stockElement.innerHTML = `
+                    <div class="asset-info">
+                        <div class="asset-name">${stock.name} (${stockId})</div>
+                        <div class="asset-price">$${stock.price.toFixed(2)}</div>
+                        ${playerStock ? `<div>Im Besitz: ${playerStock.quantity} Aktien</div>` : ''}
+                    </div>
+                    <button class="action-btn buy-btn" data-stock="${stockId}">Kaufen</button>
+                    ${playerStock ? `<button class="action-btn sell-btn" data-stock="${stockId}">Verkaufen</button>` : ''}
+                `;
+                
+                stocksContainer.appendChild(stockElement);
+            }
+            
+            // Event-Listener
+            document.querySelectorAll('.buy-btn').forEach(btn => {
+                if (btn.getAttribute('data-stock')) {
+                    btn.addEventListener('click', (e) => {
+                        const stockId = e.target.getAttribute('data-stock');
+                        buyStock(stockId, 1);
+                    });
+                }
+            });
+            
+            document.querySelectorAll('.sell-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const stockId = e.target.getAttribute('data-stock');
+                    sellStock(stockId, 1);
+                });
+            });
+        }
+        
+        function renderRealEstate() {
+            const realEstateContainer = document.getElementById('real-estate-container');
+            realEstateContainer.innerHTML = '';
+            
+            for (const propertyId in market.realEstate) {
+                const property = market.realEstate[propertyId];
+                
+                const propertyElement = document.createElement('div');
+                propertyElement.className = 'asset-item';
+                propertyElement.innerHTML = `
+                    <div class="asset-info">
+                        <div class="asset-name">${property.name}</div>
+                        <div class="asset-price">$${property.price.toFixed(2)}</div>
+                    </div>
+                    <button class="action-btn property-btn" data-property="${propertyId}">Details</button>
+                `;
+                
+                realEstateContainer.appendChild(propertyElement);
+            }
+            
+            // Event-Listener
+            document.querySelectorAll('.property-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const propertyId = e.target.getAttribute('data-property');
+                    showPropertyDetails(propertyId);
+                });
+            });
+        }
+        
+        function renderPortfolio() {
+            const portfolioContainer = document.getElementById('portfolio-container');
+            let hasAssets = false;
+            let portfolioHTML = '';
+            
+            // Aktien im Portfolio
+            for (const stockId in player.portfolio.stocks) {
+                hasAssets = true;
+                const stock = market.stocks[stockId];
+                const playerStock = player.portfolio.stocks[stockId];
+                
+                portfolioHTML += `
+                    <div class="asset-item">
+                        <div class="asset-info">
+                            <div class="asset-name">${stock.name} (${stockId})</div>
+                            <div class="asset-price">
+                                ${playerStock.quantity} Aktien × $${stock.price.toFixed(2)} = $${(playerStock.quantity * stock.price).toFixed(2)}
+                            </div>
+                        </div>
+                        <button class="action-btn sell-btn" data-stock="${stockId}">Verkaufen</button>
+                    </div>
+                `;
+            }
+            
+            // Immobilien im Portfolio
+            for (const propertyId in player.portfolio.realEstate) {
+                hasAssets = true;
+                const property = market.realEstate[propertyId];
+                
+                portfolioHTML += `
+                    <div class="asset-item">
+                        <div class="asset-info">
+                            <div class="asset-name">${property.name}</div>
+                            <div class="asset-price">Wert: $${property.price.toFixed(2)}</div>
+                        </div>
+                        <button class="action-btn property-btn" data-property="${propertyId}">Details</button>
+                    </div>
+                `;
+            }
+            
+            if (!hasAssets) {
+                portfolioHTML = '<p>Du besitzt noch keine Vermögenswerte.</p>';
+            }
+            
+            portfolioContainer.innerHTML = portfolioHTML;
+            
+            // Event-Listener
+            document.querySelectorAll('.sell-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const stockId = e.target.getAttribute('data-stock');
+                    sellStock(stockId, 1);
+                });
+            });
+        }
+        
+        // Tab-Wechsel
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Alle Tabs deaktivieren
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Ausgewählten Tab aktivieren
+                this.classList.add('active');
+                document.getElementById(`${tabId}-tab`).classList.add('active');
+            });
+        });
+        
+        // Aktien kaufen
+        function buyStock(stockId, quantity) {
+            const stock = market.stocks[stockId];
+            const totalCost = stock.price * quantity;
+            
+            if (player.balance < totalCost) {
+                alert("Nicht genügend Guthaben!");
+                return;
+            }
+            
+            player.balance -= totalCost;
+            
+            if (!player.portfolio.stocks[stockId]) {
+                player.portfolio.stocks[stockId] = {
+                    quantity: 0,
+                    averagePrice: 0
+                };
+            }
+            
+            const currentQuantity = player.portfolio.stocks[stockId].quantity;
+            const currentTotal = currentQuantity * player.portfolio.stocks[stockId].averagePrice;
+            const newTotal = currentTotal + totalCost;
+            
+            player.portfolio.stocks[stockId].quantity += quantity;
+            player.portfolio.stocks[stockId].averagePrice = newTotal / player.portfolio.stocks[stockId].quantity;
+            
+            // UI aktualisieren
+            renderPlayerInfo();
+            renderStocks();
+            renderPortfolio();
+            
+            // In einer echten App würde hier ein API-Call stattfinden
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+        
+        // Aktien verkaufen
+        function sellStock(stockId, quantity) {
+            const stock = market.stocks[stockId];
+            const playerStock = player.portfolio.stocks[stockId];
+            
+            if (!playerStock || playerStock.quantity < quantity) {
+                alert("Nicht genügend Aktien!");
+                return;
+            }
+            
+            const revenue = stock.price * quantity;
+            player.balance += revenue;
+            
+            // Gewinn/Verlust berechnen
+            const profit = revenue - (playerStock.averagePrice * quantity);
+            
+            // Erfahrungspunkte für Gewinn
+            if (profit > 0) {
+                const expGain = Math.floor(profit / 10);
+                player.experience += expGain;
+                checkLevelUp();
+            }
+            
+            playerStock.quantity -= quantity;
+            
+            if (playerStock.quantity === 0) {
+                delete player.portfolio.stocks[stockId];
+            }
+            
+            // UI aktualisieren
+            renderPlayerInfo();
+            renderStocks();
+            renderPortfolio();
+            
+            // In einer echten App würde hier ein API-Call stattfinden
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+        
+        function showPropertyDetails(propertyId) {
+            const property = market.realEstate[propertyId];
+            
+            tg.showPopup({
+                title: property.name,
+                message: `Preis: $${property.price.toFixed(2)}\nTyp: ${property.type}\nGeschätzte monatliche Rendite: $${(property.price * 0.005).toFixed(2)}`,
+                buttons: [
+                    {id: "buy", type: "default", text: "Kaufen"},
+                    {id: "close", type: "cancel", text: "Schließen"}
+                ]
+            }, function(buttonId) {
+                if (buttonId === "buy") {
+                    buyProperty(propertyId);
+                }
+            });
+        }
+        
+        function buyProperty(propertyId) {
+            const property = market.realEstate[propertyId];
+            
+            if (player.balance < property.price) {
+                alert("Nicht genügend Guthaben für diese Immobilie!");
+                return;
+            }
+            
+            player.balance -= property.price;
+            
+            player.portfolio.realEstate[propertyId] = {
+                purchaseDate: new Date(),
+                purchasePrice: property.price,
+                monthlyIncome: property.price * 0.005
+            };
+            
+            // UI aktualisieren
+            renderPlayerInfo();
+            renderRealEstate();
+            renderPortfolio();
+            
+            // In einer echten App würde hier ein API-Call stattfinden
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+        
+        function checkLevelUp() {
+            const expNeeded = player.level * 1000;
+            
+            if (player.experience >= expNeeded) {
+                player.level++;
+                player.experience -= expNeeded;
+                
+                tg.showPopup({
+                    title: "Level Up!",
+                    message: `Glückwunsch! Du bist jetzt Level ${player.level}!`,
+                    buttons: [{id: "ok", type: "ok", text: "OK"}]
+                });
+            }
+        }
+        
+        // Markt-Updates simulieren (in einer echten App wäre dies serverseitig)
+        function updateMarket() {
+            for (const stockId in market.stocks) {
+                const stock = market.stocks[stockId];
+                const change = (Math.random() - 0.5) * 2 * stock.volatility;
+                stock.price = Math.max(1, stock.price * (1 + change));
+            }
+            
+            renderStocks();
+            renderPortfolio();
+        }
+        
+        // Initial rendern
+        renderPlayerInfo();
+        renderStocks();
+        renderRealEstate();
+        renderPortfolio();
+        
+        // Markt-Updates alle 30 Sekunden (für Demo-Zwecke)
+        setInterval(updateMarket, 30000);
+        
+        // Telegram WebApp ready-Event
+        tg.onEvent('viewportChanged', renderPlayerInfo);
+        
+        // Main Button einrichten
+        tg.MainButton.setText('Tägliche Bonus holen');
+        tg.MainButton.onClick(function() {
+            player.balance += 500;
+            player.experience += 50;
+            renderPlayerInfo();
+            checkLevelUp();
+            tg.HapticFeedback.notificationOccurred('success');
+            tg.showPopup({
+                title: "Täglicher Bonus",
+                message: "Du hast $500 und 50 Erfahrungspunkte erhalten!",
+                buttons: [{id: "ok", type: "ok", text: "OK"}]
+            });
+        });
+        tg.MainButton.show();
+    </script>
+</body>
+</html>
